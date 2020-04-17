@@ -51,7 +51,7 @@ const autoCompleteConfig = {
         }
         
         return response.data.Search;
-    }
+    },
 };
 
 createAutoComplete({
@@ -61,6 +61,9 @@ createAutoComplete({
         document.querySelector('.tutorial').classList.add('is-hidden');
         onMovieSelect(movie, document.querySelector('#first-summary'), 'first');
     },
+    resetColumn(){
+        resetButton('first');
+    }
 });
 
 createAutoComplete({
@@ -70,6 +73,9 @@ createAutoComplete({
         document.querySelector('.tutorial').classList.add('is-hidden');
         onMovieSelect(movie, document.querySelector('#second-summary'), 'second');
     },
+    resetColumn(){
+        resetButton('second');
+    }
 });
 
 createAutoComplete({
@@ -79,8 +85,35 @@ createAutoComplete({
         document.querySelector('.tutorial').classList.add('is-hidden');
         onMovieSelect(movie, document.querySelector('#third-summary'), 'third');
     },
+    resetColumn(){
+        resetButton('third');
+    }
 });
 
+
+const resetButton = (side) => {
+    const summaryElement = document.querySelector(`#${side}-summary`);
+    const inputElement = document.querySelector(`#${side}-autocomplete input`);
+    summaryElement.innerHTML = '';
+    inputElement.value = '';
+
+    console.log(summaryElement, inputElement);
+
+    // columnCount = 0;
+    summaryCount--;
+    if(summaryCount > 1){
+        runComparison();
+    } else {
+        returnStats();
+    }
+
+    if((document.querySelector('#first-summary').innerHTML === '') && 
+        (document.querySelector('#second-summary').innerHTML === '') && 
+        (document.querySelector('#third-summary').innerHTML === '')){
+            document.querySelector('.tutorial').classList.remove('is-hidden');
+            document.querySelector('footer').style.position = 'absolute';
+    }
+};
 
 let firstMovie, secondMovie, thirdMovie;
 let summaryCount = 0;
@@ -91,7 +124,7 @@ const onMovieSelect = async (movie, summaryElement, side) => {
             i: `${movie.imdbID}`,
         }
     });
-    console.log(movieInformation.data);
+    // console.log(movieInformation.data);
     if(side === 'first') {
         firstMovie = movieInformation.data;
     } else if(side === 'second') {
@@ -99,55 +132,91 @@ const onMovieSelect = async (movie, summaryElement, side) => {
     } else if (side === 'third') {
         thirdMovie = movieInformation.data;
     }
+
     summaryElement.innerHTML = movieTemplate(movieInformation.data);
-    
+    document.querySelector('footer').style.position = 'relative';
     summaryCount++;
+
     console.log(`columnCount: ${columnCount}`, `summaryCount: ${summaryCount}`);
+
     if(summaryCount > 1){
         runComparison();
+    } else {
+        returnStats();
     }
+
 }
 
-const runComparison = () => {
+// Below function return 'Stats' and also reset the colors of the 'article' element.
+const returnStats = () => {
     const firstStats = document.querySelectorAll('#first-summary .notification');
     const secondStats = document.querySelectorAll('#second-summary .notification');
     const thirdStats = document.querySelectorAll('#third-summary .notification');
 
-    console.log(firstStats.length, secondStats.length, thirdStats.length);
-    firstStats.forEach((firstColumnStat, index) => {
-        
-        const valueArray = [];
-        let firstColumnValue, secondColumnValue, thirdColumnValue ;
-        let secondColumnStat, thirdColumnStat;
+    let size;
+    if(firstStats.length > 0){
+        size = firstStats.length;
+    } else if (secondStats.length > 0){
+        size = secondStats.length;
+    } else {
+        size = thirdStats.length;
+    }
 
+    let firstColumnStat, secondColumnStat, thirdColumnStat;
+    for(let index=0; index < size; index++){
         if(firstStats.length > 0){
-            firstColumnValue = parseFloat(firstColumnStat.dataset.value);
-            valueArray.push(firstColumnValue);
-        }
-        if(secondStats.length > 0){
-            secondColumnStat = secondStats[index];
-            secondColumnValue = parseFloat(secondColumnStat.dataset.value);
-            valueArray.push(secondColumnValue);
-        }
-        if(thirdStats.length > 0){
-            thirdColumnStat = thirdStats[index];
-            thirdColumnValue = parseFloat(thirdColumnStat.dataset.value);
-            valueArray.push(thirdColumnValue);
-        }
-        console.log(Array, valueArray);
-
-        if(firstStats.length > 0){
+            firstColumnStat = firstStats[index];
             firstColumnStat.classList.remove('is-primary');
             firstColumnStat.classList.add('is-info');
         }
         if(secondStats.length > 0){
+            secondColumnStat = secondStats[index];
             secondColumnStat.classList.remove('is-primary');
             secondColumnStat.classList.add('is-info');
         }
         if(thirdStats.length > 0){
+            thirdColumnStat = thirdStats[index];
             thirdColumnStat.classList.remove('is-primary');
             thirdColumnStat.classList.add('is-info');
         }
+    }
+
+    return {
+        firstStats,
+        secondStats,
+        thirdStats,
+        size
+    };
+
+};
+
+const runComparison = () => {
+
+    const {firstStats, secondStats, thirdStats, size} = returnStats();
+
+    // console.log(firstStats.length, secondStats.length, thirdStats.length);
+    for(let index=0; index < size; index++){
+        // const valueArray = [];
+        let firstColumnStat, secondColumnStat, thirdColumnStat;
+        let firstColumnValue, secondColumnValue, thirdColumnValue ;
+
+        if(firstStats.length > 0){
+            firstColumnStat = firstStats[index];
+            firstColumnValue = parseFloat(firstColumnStat.dataset.value);
+            // valueArray.push(firstColumnValue);
+        }
+        if(secondStats.length > 0){
+            secondColumnStat = secondStats[index];
+            secondColumnValue = parseFloat(secondColumnStat.dataset.value);
+            // valueArray.push(secondColumnValue);
+        }
+        if(thirdStats.length > 0){
+            thirdColumnStat = thirdStats[index];
+            thirdColumnValue = parseFloat(thirdColumnStat.dataset.value);
+            // valueArray.push(thirdColumnValue);
+        }
+        // console.log(Array, valueArray);
+
         if(isNaN(firstColumnValue))
             firstColumnValue = 0;
         if(isNaN(secondColumnValue))
@@ -167,7 +236,8 @@ const runComparison = () => {
             thirdColumnStat.classList.remove('is-info');
             thirdColumnStat.classList.add('is-primary');
         }
-    });
+    }
+
 };
 
 const movieTemplate = (movieDetail) => {
@@ -186,8 +256,7 @@ const movieTemplate = (movieDetail) => {
         }
     }, 0)
 
-    console.log(awards, dollars, metaScore, imdbRating, imdbVotes);
-
+    // console.log(awards, dollars, metaScore, imdbRating, imdbVotes);
 
     return `
         <article class="media">

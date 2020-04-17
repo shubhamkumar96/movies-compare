@@ -2,6 +2,10 @@
   width: 600px;
   text-align: center;
   margin: auto;
+  padding-top: 30px;
+  padding-bottom: 50px;
+  margin-top: 40px;
+  margin-bottom: 50px;
 }
 
 figure.image {
@@ -53,4 +57,31 @@ figure .image img {
 
 .awardHeight {
   height: 170px;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+footer {
+  position: relative;
+  left: 0;
+  bottom: 0;
+  /* height: 100px; */
+  width: 100%;
+  overflow: hidden;
+}
+
+.removeMargin {
+  margin-bottom: 0px;
+  padding-top: 30px;
+  padding-bottom: 35px;
+}
+
+.tutorial-img {
+  padding-top: 20px;
+  padding-bottom: 0px;
+  margin-bottom: 0px;
+  border: 2px solid red;
 }

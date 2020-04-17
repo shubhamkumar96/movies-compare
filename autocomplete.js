@@ -3,9 +3,13 @@ const createAutoComplete = ({
     renderOption, 
     onOptionSelect, 
     inputValue, 
-    fetchData 
+    fetchData,
+    resetColumn
 }) => {
     root.innerHTML = `
+        <div class="buttons" style="justify-content: center;">
+            <button class="button is-danger reset">Reset Below Column</button>
+        </div>
         <label><b>Search</b></label>
         <input class="input"/>
         <div class="dropdown">
@@ -18,10 +22,11 @@ const createAutoComplete = ({
     const input = root.querySelector('input');
     const dropdown = root.querySelector('.dropdown');
     const resultsWrapper = root.querySelector('.results');
+    const resetButton = root.querySelector('.reset');
 
     const onInput = async (event) => {
         const items = await fetchData(event.target.value);
-        console.log(items);
+        // console.log(items);
         
         if(!items.length){
             dropdown.classList.remove('is-active');
@@ -44,6 +49,8 @@ const createAutoComplete = ({
         }
 
     };
+
+    resetButton.addEventListener('click', resetColumn);
 
     input.addEventListener('input', debounce(onInput, 300));
 
