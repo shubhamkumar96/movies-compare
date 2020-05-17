@@ -1,8 +1,0 @@
-Here is your key: 61b21cc
-
-Please append it to all of your API requests,
-
-OMDb API: http://www.omdbapi.com/?i=tt3896198&apikey=61b21cc
-
-Click the following URL to activate your key: http://www.omdbapi.com/apikey.aspx?VERIFYKEY=bd1b4d1d-a608-4fab-84e9-821b87b40d2b
-If you did not make this request, please disregard this email.
