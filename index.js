@@ -26,34 +26,41 @@ const createColumn = () => {
     return document.querySelector(`#${autocompleteName}`);
 };
 
+//  ======================================================================================
 // CONFIG Function
 const autoCompleteConfig = {
-    renderOption(movie) {
-        const imgSrc = movie.Poster === 'N/A' ? '' : movie.Poster;
+   //   To query the poster and create 'drop-down' item.
+   renderOption(movie) {
+        const base_img_url = "https://image.tmdb.org/t/p/w500";
+        const imgSrc = movie.poster_path === null ? '' : base_img_url + movie.poster_path;
+        let releaseYear = ((movie.release_date + "").split('-'))[0];
         return `
             <img src="${imgSrc}" />
-            ${movie.Title} (${movie.Year})
+            ${movie.title} (${releaseYear})
         `;
-    },
+    },  
+
     inputValue(movie) {
-        return movie.Title;
+        return movie.title;
     },
+    //  Call API to get list of Movies based on keywords.
     async fetchData(searchTerm) {
-        const response = await axios.get('https://www.omdbapi.com/', {
+        const response = await axios.get('https://api.themoviedb.org/3/search/movie', {
             params: {
-                apikey: '61b21cc',
-                s: searchTerm,
+                api_key: 'f1aa11a7624dbaf3024fa5751d21ee70',
+                query: searchTerm,
             }
         });
-
-        if(response.data.Error){
+        // console.log(response);
+        if(response.data.page === undefined){
             return [];
         }
-        
-        return response.data.Search;
+        return response.data.results;
     },
 };
 
+//  ======================================================================================
+//  For adding First Column
 createAutoComplete({
     ...autoCompleteConfig,
     root: createColumn(),
@@ -66,6 +73,7 @@ createAutoComplete({
     }
 });
 
+//  For adding Second Column
 createAutoComplete({
     ...autoCompleteConfig,
     root: createColumn(),
@@ -78,6 +86,7 @@ createAutoComplete({
     }
 });
 
+//  For adding Third Column
 createAutoComplete({
     ...autoCompleteConfig,
     root: createColumn(),
@@ -90,15 +99,15 @@ createAutoComplete({
     }
 });
 
-
+//  ======================================================================================
+//  For adding Reset Button.
 const resetButton = (side) => {
     const summaryElement = document.querySelector(`#${side}-summary`);
     const inputElement = document.querySelector(`#${side}-autocomplete input`);
     summaryElement.innerHTML = '';
     inputElement.value = '';
 
-    console.log(summaryElement, inputElement);
-
+    // console.log(summaryElement, inputElement);
     // columnCount = 0;
     summaryCount--;
     if(summaryCount > 1){
@@ -115,30 +124,34 @@ const resetButton = (side) => {
     }
 };
 
-let firstMovie, secondMovie, thirdMovie;
+//  ======================================================================================
+//  Calling APIs to get details for selected Movie.
 let summaryCount = 0;
 const onMovieSelect = async (movie, summaryElement, side) => {
-    const movieInformation = await axios.get('https://www.omdbapi.com/', {
+    
+    //Calling "TMDB" API
+    const queryURL = "https://api.themoviedb.org/3/movie/" + movie.id + "?";
+    const movieInformationTMDB = await axios.get(queryURL, {
         params: {
-            apikey: '61b21cc',
-            i: `${movie.imdbID}`,
+            api_key: 'f1aa11a7624dbaf3024fa5751d21ee70',
+            language: 'en-US',
         }
     });
-    // console.log(movieInformation.data);
-    if(side === 'first') {
-        firstMovie = movieInformation.data;
-    } else if(side === 'second') {
-        secondMovie = movieInformation.data;
-    } else if (side === 'third') {
-        thirdMovie = movieInformation.data;
-    }
+    // console.log(movieInformationTMDB);
 
-    summaryElement.innerHTML = movieTemplate(movieInformation.data);
+    //Calling "OMDB" API, to get some data which are not present in "TMDB" API Results.
+    const movieInformationOMDB = await axios.get('https://www.omdbapi.com/', {
+        params: {
+            apikey: '61b21cc',
+            i: `${movieInformationTMDB.data.imdb_id}`,
+        }
+    });
+    // console.log(movieInformationOMDB);
+    summaryElement.innerHTML = movieTemplate(movieInformationOMDB.data, movieInformationTMDB.data);
     document.querySelector('footer').style.position = 'relative';
     summaryCount++;
 
-    console.log(`columnCount: ${columnCount}`, `summaryCount: ${summaryCount}`);
-
+    // console.log(`columnCount: ${columnCount}`, `summaryCount: ${summaryCount}`);
     if(summaryCount > 1){
         runComparison();
     } else {
@@ -147,6 +160,7 @@ const onMovieSelect = async (movie, summaryElement, side) => {
 
 }
 
+//  ======================================================================================
 // Below function return 'Stats' and also reset the colors of the 'article' element.
 const returnStats = () => {
     const firstStats = document.querySelectorAll('#first-summary .notification');
@@ -190,6 +204,7 @@ const returnStats = () => {
 
 };
 
+//  ======================================================================================
 const runComparison = () => {
 
     const {firstStats, secondStats, thirdStats, size} = returnStats();
@@ -240,58 +255,81 @@ const runComparison = () => {
 
 };
 
-const movieTemplate = (movieDetail) => {
-
-    const dollars = parseInt(movieDetail.BoxOffice.replace(/\$/g, '').replace(/,/g, ''));
-    const metaScore = parseInt(movieDetail.Metascore);
-    const imdbRating = parseFloat(movieDetail.imdbRating);
-    const imdbVotes = parseInt(movieDetail.imdbVotes.replace(/,/g, ''));
-
-    const awards = movieDetail.Awards.split(' ').reduce((prev, word) => {
-        const value = parseInt(word);
-        if(isNaN(value)){
-            return prev;
-        } else {
-            return prev + value;
-        }
-    }, 0)
+//  ======================================================================================
+const movieTemplate = (movieDetailOMDB, movieDetailTMDB) => {
+    // console.log(movieDetailOMDB);
+    // console.log(movieDetailTMDB);
+    let dollars = "N/A";
+    let metaScore = "N/A";
+    let imdbRating = "N/A";
+    let imdbVotes = "N/A";
+    let awards = "N/A";
+    // console.log(movieDetailTMDB.revenue);
+    if(movieDetailTMDB.revenue !== undefined && movieDetailTMDB.revenue !== "N/A" && movieDetailTMDB.revenue !== 0){
+        //  To format the number with commas as thousands separators (23456 to 23,456).
+        let revenue = movieDetailTMDB.revenue;
+        var parts = revenue.toString().split(".");
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        dollars = "$" + parts.join(".");
+    }
+        
+    if(movieDetailOMDB.Metascore !== undefined && movieDetailOMDB.Metascore !== "N/A")
+        metaScore = parseInt(movieDetailOMDB.Metascore);
+    if(movieDetailOMDB.imdbRating !== undefined && movieDetailOMDB.imdbRating !== "N/A")
+        imdbRating = parseFloat(movieDetailOMDB.imdbRating);   
+    if(movieDetailOMDB.imdbVotes !== undefined && movieDetailOMDB.imdbVotes !== "N/A")
+        imdbVotes = parseInt(movieDetailOMDB.imdbVotes.replace(/,/g, ''));
+    if(movieDetailOMDB.Awards !== undefined && movieDetailOMDB.Awards !== "N/A"){
+        awards = movieDetailOMDB.Awards.split(' ').reduce((prev, word) => {
+            const value = parseInt(word);
+            if(isNaN(value)){
+                return prev;
+            } else {
+                return prev + value;
+            }
+        }, 0);
+    }
+    
+    const base_img_url = "https://image.tmdb.org/t/p/w500";
+    const imgSrc = movieDetailTMDB.poster_path === null ? '' : base_img_url + movieDetailTMDB.poster_path;
 
     // console.log(awards, dollars, metaScore, imdbRating, imdbVotes);
-
     return `
         <article class="media">
             <figure class="media-left">
                 <p class="image">
-                    <img src="${movieDetail.Poster}" />
+                    <img src="${imgSrc}" />
                 </p>
             </figure>
             <div class="media-content">
                 <div class="content">
-                    <h1>${movieDetail.Title}  (${movieDetail.Year})</h1>
-                    <h4>${movieDetail.Genre}</h4>
-                    <p>${movieDetail.Plot}</p>
+                    <h1>${movieDetailTMDB.original_title}  (${movieDetailOMDB.Year})</h1>
+                    <h4>${movieDetailOMDB.Genre}</h4>
+                    <p>${movieDetailOMDB.Plot}</p>
                 </div>
             </div>
         </article>
         <article data-value=${awards} class="notification is-info awardHeight">
-            <p class="title">${movieDetail.Awards}</p>
+            <p class="title">${movieDetailOMDB.Awards}</p>
             <p class="subtitle">Awards</p>
         </article>
-        <article data-value=${dollars} class="notification is-info">
-            <p class="title">${movieDetail.BoxOffice}</p>
+        <article data-value=${movieDetailTMDB.revenue} class="notification is-info">
+            <p class="title">${dollars}</p>
             <p class="subtitle">BoxOffice</p>
         </article>
         <article data-value=${metaScore} class="notification is-info">
-            <p class="title">${movieDetail.Metascore}</p>
+            <p class="title">${metaScore}</p>
             <p class="subtitle">Metascore</p>
         </article>
         <article data-value=${imdbRating} class="notification is-info">
-            <p class="title">${movieDetail.imdbRating}</p>
+            <p class="title">${imdbRating}</p>
             <p class="subtitle">IMDB Rating</p>
         </article>
         <article data-value=${imdbVotes} class="notification is-info">
-            <p class="title">${movieDetail.imdbVotes}</p>
+            <p class="title">${movieDetailOMDB.imdbVotes}</p>
             <p class="subtitle">IMDB Votes</p>
         </article>
     `;
 };
+
+//  ================================== THE END ====================================================
